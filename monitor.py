@@ -20,7 +20,7 @@ MAGYAR_HONAPOK = {
 
 GMAIL_USER  = os.environ["GMAIL_USER"]
 GMAIL_PASS  = os.environ["GMAIL_PASS"]
-NOTIFY_TO   = os.environ["NOTIFY_TO"] 
+NOTIFY_TO   = os.environ["NOTIFY_TO"]
 DAYS_LIMIT  = int(os.environ.get("DAYS_LIMIT", "7"))
 
 
@@ -68,7 +68,8 @@ def scrape():
 def send_email(title, link, date_str, parsed):
     days_ago = (datetime.now() - parsed).days if parsed else "?"
 
-    subject = f"[Jófogás SCRIPT] Friss 576 Kbyte hirdetés: {title[:60]}"
+    # subject = f"[Jófogás SCRIPT] Friss 576 Kbyte hirdetés: {title[:60]}"
+    subject = "[Jófogás SCRIPT] Friss 576 Kbyte magazin hirdetés!"
     body = f"""Szia!
 
 Új hirdetést találtam a Jófogáson, ami {days_ago} napos (határon belül van).
