@@ -18,9 +18,9 @@ MAGYAR_HONAPOK = {
     "júl": 7, "aug": 8, "szep": 9, "okt": 10, "nov": 11, "dec": 12
 }
 
-GMAIL_USER  = os.environ["GMAIL_USER"]   # pl. te@gmail.com
-GMAIL_PASS  = os.environ["GMAIL_PASS"]   # Gmail App Password
-NOTIFY_TO   = os.environ["NOTIFY_TO"]    # kire küldje (lehet ugyanaz)
+GMAIL_USER  = os.environ["GMAIL_USER"]
+GMAIL_PASS  = os.environ["GMAIL_PASS"]
+NOTIFY_TO   = os.environ["NOTIFY_TO"] 
 DAYS_LIMIT  = int(os.environ.get("DAYS_LIMIT", "7"))
 
 
@@ -53,7 +53,7 @@ def scrape():
         first_link_tag = soup.find("a", href=re.compile(r"jofogas\.hu/.+\.htm"))
 
     title = first_link_tag.get_text(strip=True) if first_link_tag else "N/A"
-    link  = first_link_tag["href"] if first_link_tag else URL
+    link  = URL #first_link_tag["href"] if first_link_tag else URL #ez szar kiszedtem
 
     # --- első dátum az oldalon ---
     # Formátum: "ápr 16., 07:39" vagy "több, mint egy hónapja"
@@ -68,7 +68,7 @@ def scrape():
 def send_email(title, link, date_str, parsed):
     days_ago = (datetime.now() - parsed).days if parsed else "?"
 
-    subject = f"[Jófogás] Friss hirdetés: {title[:60]}"
+    subject = f"[Jófogás SCRIPT] Friss 576 Kbyte hirdetés: {title[:60]}"
     body = f"""Szia!
 
 Új hirdetést találtam a Jófogáson, ami {days_ago} napos (határon belül van).
