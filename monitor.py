@@ -72,9 +72,8 @@ def send_email(title, link, date_str, parsed):
     subject = "[Jófogás SCRIPT] Friss 576 Kbyte magazin hirdetés!"
     body = f"""Szia!
 
-Új hirdetést találtam a Jófogáson, ami {days_ago} napos (határon belül van).
+Új hirdetést találtam a Jófogáson, ami {days_ago} napos ({DAYS_LIMIT} határon belül van).
 
-Cím:   {title}
 Link:  {link}
 Dátum: {date_str}
 
