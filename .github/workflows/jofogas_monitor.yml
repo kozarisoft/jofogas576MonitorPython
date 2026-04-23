@@ -2,7 +2,7 @@ name: Jófogás Monitor
 
 on:
   schedule:
-    - cron: '0 */3 * * *'  
+    - cron: '0 */3 * * *'  # minden 3. óra nulladik percében fut
   workflow_dispatch:       
 
 jobs:
