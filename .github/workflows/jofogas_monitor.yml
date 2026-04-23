@@ -2,8 +2,8 @@ name: Jófogás Monitor
 
 on:
   schedule:
-    - cron: '0 * * * *'   # minden óra nulladik percében fut
-  workflow_dispatch:        # kézzel is indítható a GitHub UI-ból (teszteléshez)
+    - cron: '0 */3 * * *'  
+  workflow_dispatch:       
 
 jobs:
   monitor:
