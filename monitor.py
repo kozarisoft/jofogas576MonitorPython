@@ -77,6 +77,7 @@ def send_email(title, link, date_str, parsed):
 
 Új hirdetést találtam a Jófogáson, ami {days_ago} napos ({DAYS_LIMIT} napos határon belül van).
 
+Cím:   {title}
 Link:  {link}
 Dátum: {date_str}
 
