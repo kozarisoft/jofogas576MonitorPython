@@ -7,13 +7,15 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import os
 import sys
+from urllib.parse import quote, urljoin
 
-URL = "https://www.jofogas.hu/magyarorszag?q=576%20kbyte"
+SEARCH = os.environ.get("SEARCH", "576 kbyte")
+URL = f"https://www.jofogas.hu/magyarorszag?q={quote(SEARCH)}"
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0 Safari/537.36"
 }
 
-MAGYAR_HONAPOK = {
+HUNGARIAN_MONTHS = {
     "jan": 1, "feb": 2, "már": 3, "ápr": 4, "máj": 5, "jún": 6,
     "júl": 7, "aug": 8, "szep": 9, "okt": 10, "nov": 11, "dec": 12
 }
@@ -29,13 +31,13 @@ def parse_date(date_str):
     m = re.match(r"(\w+)\s+(\d+)\.,\s+\d+:\d+", date_str.strip())
     if not m:
         return None
-    honap_str = m.group(1)[:3].lower()
-    nap = int(m.group(2))
-    honap = MAGYAR_HONAPOK.get(honap_str)
-    if not honap:
+    month_key = m.group(1)[:3].lower()
+    day = int(m.group(2))
+    month = HUNGARIAN_MONTHS.get(month_key)
+    if not month:
         return None
-    ev = datetime.now().year
-    return datetime(ev, honap, nap)
+    year = datetime.now().year
+    return datetime(year, month, day)
 
 
 def scrape():
@@ -45,15 +47,17 @@ def scrape():
     soup = BeautifulSoup(r.text, "html.parser")
 
     # --- első hirdetés linkje + címe ---
-    first_link_tag = soup.select_one("a[href*='/baranya/'], a[href*='/budapest/'], "
-                                     "a[href*='/heves/'], a[href*='/pest/'], "
-                                     "a[href*='/gyor'], a[href*='.jofogas.hu/']")
+    ad_links = soup.select("a[href$='.htm'], a[href*='.htm?']")
+    first_link_tag = next((a for a in ad_links if a.get_text(strip=True)), None)
     # Általánosabb fallback: bármely hirdetés-link (tartalmaz .htm-et)
     if not first_link_tag:
-        first_link_tag = soup.find("a", href=re.compile(r"jofogas\.hu/.+\.htm"))
+        first_link_tag = soup.find(
+            "a",
+            href=re.compile(r"(?:https?://(?:www\.)?jofogas\.hu)?/.+\.htm(?:\?.*)?$")
+        )
 
     title = first_link_tag.get_text(strip=True) if first_link_tag else "N/A"
-    link  = URL #first_link_tag["href"] if first_link_tag else URL #ez szar kiszedtem
+    link = urljoin(URL, first_link_tag.get("href")) if first_link_tag else URL
 
     # --- első dátum az oldalon ---
     # Formátum: "ápr 16., 07:39" vagy "több, mint egy hónapja"
@@ -68,8 +72,7 @@ def scrape():
 def send_email(title, link, date_str, parsed):
     days_ago = (datetime.now() - parsed).days if parsed else "?"
 
-    # subject = f"[Jófogás SCRIPT] Friss 576 Kbyte hirdetés: {title[:60]}"
-    subject = "[Jófogás SCRIPT] Friss 576 Kbyte magazin hirdetés!"
+    subject = f"[Jofogas SCRIPT] Friss talalat: {SEARCH}"
     body = f"""Szia!
 
 Új hirdetést találtam a Jófogáson, ami {days_ago} napos ({DAYS_LIMIT} napos határon belül van).
