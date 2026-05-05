@@ -41,15 +41,25 @@ def parse_date(date_str):
 
 
 def scrape():
-    """Visszaadja az első találat (cím, link, dátum_str, datetime) tuple-t."""
-    r = requests.get(URL, headers=HEADERS, timeout=15)
-    r.raise_for_status()
+    last_error = None
+
+    for attempt in range(3):
+        try:
+            print(f"Próba #{attempt + 1}")
+            r = requests.get(URL, headers=HEADERS, timeout=15)
+            r.raise_for_status()
+            break
+        except requests.exceptions.RequestException as e:
+            last_error = e
+            print(f"⚠️ Lekérés sikertelen: {e}")
+    else:
+        raise last_error
+
     soup = BeautifulSoup(r.text, "html.parser")
 
-    # --- első hirdetés linkje + címe ---
     ad_links = soup.select("a[href$='.htm'], a[href*='.htm?']")
     first_link_tag = next((a for a in ad_links if a.get_text(strip=True)), None)
-    # Általánosabb fallback: bármely hirdetés-link (tartalmaz .htm-et)
+
     if not first_link_tag:
         first_link_tag = soup.find(
             "a",
@@ -59,12 +69,10 @@ def scrape():
     title = first_link_tag.get_text(strip=True) if first_link_tag else "N/A"
     link = urljoin(URL, first_link_tag.get("href")) if first_link_tag else URL
 
-    # --- első dátum az oldalon ---
-    # Formátum: "ápr 16., 07:39" vagy "több, mint egy hónapja"
     date_pattern = re.compile(r"[a-záéíóöőúüű]+\s+\d+\.,\s+\d+:\d+")
     date_match = date_pattern.search(r.text)
     date_str = date_match.group(0) if date_match else None
-    parsed   = parse_date(date_str) if date_str else None
+    parsed = parse_date(date_str) if date_str else None
 
     return title, link, date_str, parsed
 
@@ -98,24 +106,40 @@ Dátum: {date_str}
 
 def main():
     print(f"Lekérés: {URL}")
-    title, link, date_str, parsed = scrape()
+
+    try:
+        title, link, date_str, parsed = scrape()
+    except requests.exceptions.RequestException as e:
+        print(f"⚠️ Jófogás lekérés hiba: {e}")
+        print("Nem küldök emailt, workflow sikeresnek jelölve.")
+        sys.exit(0)
+    except Exception as e:
+        print(f"⚠️ Scrape hiba: {e}")
+        print("Nem küldök emailt, workflow sikeresnek jelölve.")
+        sys.exit(0)
+
     print(f"Első találat: {title}")
     print(f"Link:         {link}")
     print(f"Dátum string: {date_str}")
     print(f"Parsed dátum: {parsed}")
 
     if not parsed:
-        print("⚠️  Nem sikerült dátumot értelmezni – nincs riasztás.")
+        print("⚠️ Nem sikerült dátumot értelmezni – nincs riasztás.")
         sys.exit(0)
 
     days_diff = (datetime.now() - parsed).days
-    print(f"Dátum kora:   {days_diff} nap")
+    print(f"Dátum kora: {days_diff} nap")
 
     if days_diff <= DAYS_LIMIT:
         print(f"🔔 Dátumon belül ({DAYS_LIMIT} napon belül) – email küldése...")
-        send_email(title, link, date_str, parsed)
+        try:
+            send_email(title, link, date_str, parsed)
+        except Exception as e:
+            print(f"⚠️ Email küldési hiba: {e}")
+            print("Workflow sikeresnek jelölve, hogy ne legyen random piros.")
+            sys.exit(0)
     else:
-        print(f"ℹ️  Dátum régebbi mint {DAYS_LIMIT} nap – nincs riasztás.")
+        print(f"ℹ️ Dátum régebbi mint {DAYS_LIMIT} nap – nincs riasztás.")
 
 
 if __name__ == "__main__":
